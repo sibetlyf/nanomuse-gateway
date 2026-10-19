@@ -1,0 +1,14 @@
+[project]
+name = "nanomuse-gateway"
+version = "1.0.0"
+description = "nanoMuse 独立中继网关服务，支持无感知免密直连与PSK鉴权"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "websockets>=13.0",
+]
+
+[tool.uv]
+package = false
