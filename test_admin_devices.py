@@ -100,6 +100,19 @@ async def test_device(ws, device: dict, test_action: str, prompt_text: str):
             mid = msg.get("id")
 
             if mid == call_id:
+                # 捕获中间执行流事件 (tool 调用、流式文字等)
+                if mtype == "event":
+                    ebody = msg.get("body", {})
+                    stage = ebody.get("stage")
+                    if stage == "accepted":
+                        print(f"        ⏳ [就绪状态]: {ebody.get('message', '已就绪')}", flush=True)
+                    elif stage == "tool":
+                        print(f"        ⚡ [DSH 调用工具]: \033[33m{ebody.get('name')}\033[0m({ebody.get('args', '')})", flush=True)
+                    elif stage == "text":
+                        # 中间文本段
+                        pass
+                    continue
+
                 cost_ms = (time.perf_counter() - start_t) * 1000
                 if mtype == "result":
                     return True, msg.get("body", {}), cost_ms
@@ -135,16 +148,23 @@ async def test_device(ws, device: dict, test_action: str, prompt_text: str):
     if test_action in ("all", "task"):
         print(f"  [3/4] 正在委托 DSH 会话任务 (action: task)...", flush=True)
         task_text = prompt_text or "这是一条来自网关后端的自检指令，请验证 DSH 会话调度与 Agent 是否已正常就绪！"
-        print(f"        委托内容: \"{task_text}\"")
+        print(f"        委托需求: \"{task_text}\"")
         try:
-            ok, res, cost = await call_action("task", {"text": task_text}, timeout_s=20.0)
+            ok, res, cost = await call_action("task", {"text": task_text}, timeout_s=120.0)
             if ok:
                 session_id = res.get("sessionId") or res.get("thread")
-                msg_tip = res.get("message") or "对端已顺利接收并唤醒 Agent"
-                print(f"        \033[32m✔ DSH 任务派发成功！\033[0m (往返延迟: {cost:.1f}ms)")
+                output_text = res.get("text", "")
+                print(f"        \033[32m✔ DSH 任务执行完成！\033[0m (总耗时: {cost:.1f}ms)")
                 if session_id:
-                    print(f"        - 创建会话ID: \033[1;33m{session_id}\033[0m")
-                print(f"        - 设备执行状态: \033[32m{msg_tip}\033[0m")
+                    print(f"        - 会话 ID: \033[1;33m{session_id}\033[0m")
+                print("        ------------------------------------------------------------")
+                print(f"        \033[1;32m💬 【DSH 思考与回答输出】:\033[0m")
+                if output_text:
+                    for line in output_text.strip().splitlines():
+                        print(f"        {line}")
+                else:
+                    print("        (无文本输出)")
+                print("        ------------------------------------------------------------")
             else:
                 print(f"        \033[31m✖ 任务委托失败\033[0m: {res}")
         except Exception as e:
