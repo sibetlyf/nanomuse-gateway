@@ -1055,25 +1055,32 @@ async def hub_endpoint(ws: WebSocket):
     finally:
         if account_id and device_id and device_id in hub.online.get(account_id, {}):
             del hub.online[account_id][device_id]
-            # 清理未决任务并向发起端报错
-            for (acc, cid), p in list(hub.pending.items()):
-                if acc == account_id and p["target"] == device_id:
-                    hub.pending.pop((acc, cid), None)
-                    caller = hub.online.get(account_id, {}).get(p["caller"])
-                    if caller:
-                        try:
-                            await caller["ws"].send_text(
-                                json.dumps(
-                                    {
-                                        "type": "error",
-                                        "id": cid,
-                                        "code": "device_offline",
-                                        "message": f"{dev_name} 在应答前意外离线",
-                                    }
-                                )
-                            )
-                        except Exception:
-                            pass
+            
+            # 异步给予 12 秒重连宽限期，避免因移动网络切换、代理抖动等瞬断直接判定长任务失败
+            async def notify_offline_after_grace(target_dev_id: str, target_dev_name: str, acc_id: str):
+                await asyncio.sleep(12.0)
+                # 宽限期过后，若该设备依然未重新接入，则清理并向调用方报错
+                if target_dev_id not in hub.online.get(acc_id, {}):
+                    for (acc, cid), p in list(hub.pending.items()):
+                        if acc == acc_id and p["target"] == target_dev_id:
+                            hub.pending.pop((acc, cid), None)
+                            caller = hub.online.get(acc_id, {}).get(p["caller"])
+                            if caller:
+                                try:
+                                    await caller["ws"].send_text(
+                                        json.dumps(
+                                            {
+                                                "type": "error",
+                                                "id": cid,
+                                                "code": "device_offline",
+                                                "message": f"{target_dev_name} 在应答前意外离线 (超过重连宽限期)",
+                                            }
+                                        )
+                                    )
+                                except Exception:
+                                    pass
+
+            asyncio.create_task(notify_offline_after_grace(device_id, dev_name, account_id))
             await hub.broadcast_devices(account_id)
 
 
