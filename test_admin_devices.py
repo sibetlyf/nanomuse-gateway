@@ -139,11 +139,12 @@ async def test_device(ws, device: dict, test_action: str, prompt_text: str):
         try:
             ok, res, cost = await call_action("task", {"text": task_text}, timeout_s=20.0)
             if ok:
-                session_id = res.get("sessionId") or res.get("thread") or "已分配"
+                session_id = res.get("sessionId") or res.get("thread")
                 msg_tip = res.get("message") or "对端已顺利接收并唤醒 Agent"
-                print(f"        \033[32m✔ DSH 调用成功！\033[0m (耗时: {cost:.1f}ms)")
-                print(f"        - 创建会话ID: \033[1;33m{session_id}\033[0m")
-                print(f"        - 对端执行回执: {msg_tip}")
+                print(f"        \033[32m✔ DSH 任务派发成功！\033[0m (往返延迟: {cost:.1f}ms)")
+                if session_id:
+                    print(f"        - 创建会话ID: \033[1;33m{session_id}\033[0m")
+                print(f"        - 设备执行状态: \033[32m{msg_tip}\033[0m")
             else:
                 print(f"        \033[31m✖ 任务委托失败\033[0m: {res}")
         except Exception as e:
