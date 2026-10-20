@@ -115,6 +115,8 @@ async def test_device(ws, device: dict, test_action: str, prompt_text: str):
                         print(f"        📡 [DSH 原始事件]: \033[35m{ebody.get('eventType')}\033[0m", flush=True)
                     elif stage == "text":
                         print(f"        ✍️  [DSH 正在生成文本...]", flush=True)
+                    elif stage == "approval":
+                        print(f"        🛡️  [远程授权自动放行]: \033[36m{ebody.get('tool')}\033[0m - {ebody.get('reason')}", flush=True)
                     continue
 
                 cost_ms = (time.perf_counter() - start_t) * 1000

@@ -940,6 +940,15 @@ async def hub_endpoint(ws: WebSocket):
                     )
                 )
 
+            # 协议级心跳响应 (ping -> pong)，维持长连接活跃防止对端被动超时关闭
+            if ftype == "ping":
+                await ws.send_text(
+                    json.dumps({"type": "pong", "time": int(time.time() * 1000)})
+                )
+                continue
+            elif ftype == "pong":
+                continue
+
             # 跨设备指令下发 (call)
             elif ftype == "call":
                 call_id = str(frame.get("id") or "")
