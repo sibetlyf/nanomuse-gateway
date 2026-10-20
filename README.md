@@ -112,7 +112,7 @@ uv run --no-project --python 3.12 --with websockets python test_admin_devices.py
 ### 2. 常用调试参数示例
 ```bash
 # 仅测试 DSH 任务委托，并传入自定义提示词:
-uv run --no-project --python 3.12 --with websockets python test_admin_devices.py --action task --prompt "请列出当前项目中的核心文件"
+uv run --no-project --python 3.12 --with websockets python test_admin_devices.py --action task --prompt "请列出当前工作区文件"
 
 # 针对远程云服务器上的网关进行诊断:
 uv run --no-project --python 3.12 --with websockets python test_admin_devices.py --gateway http://47.93.151.39:8790
@@ -120,3 +120,8 @@ uv run --no-project --python 3.12 --with websockets python test_admin_devices.py
 # 仅做轻量 Ping 连通性探测:
 uv run --no-project --python 3.12 --with websockets python test_admin_devices.py --action ping
 ```
+
+### 3. DSH 任务输出特性
+- ⚡ **执行过程全透明**：实时流式输出对端 Agent 触发的中间事件（`tool/call` 工具名称与参数、`tool/result` 执行回执）；
+- 💬 **完整呈现最终回答**：在 Agent 执行结束（`turn/end`）时，完整捕获并优雅格式化输出 Agent 的实际回答内容（支持 Markdown 结构、表格与文件列表等）；
+- 🛡️ **异常原因精准提示**：若对端模型或环境执行异常，自动透传详细失败原因（如 Schema 格式、会话超时等），大幅缩短跨端排错时间。
