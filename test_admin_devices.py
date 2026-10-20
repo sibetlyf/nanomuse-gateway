@@ -105,12 +105,16 @@ async def test_device(ws, device: dict, test_action: str, prompt_text: str):
                     ebody = msg.get("body", {})
                     stage = ebody.get("stage")
                     if stage == "accepted":
-                        print(f"        ⏳ [就绪状态]: {ebody.get('message', '已就绪')}", flush=True)
+                        print(f"        ⏳ [就绪状态]: \033[36m{ebody.get('message', '已就绪')}\033[0m", flush=True)
                     elif stage == "tool":
                         print(f"        ⚡ [DSH 调用工具]: \033[33m{ebody.get('name')}\033[0m({ebody.get('args', '')})", flush=True)
+                    elif stage == "tool_result":
+                        status_str = "\033[32m✔ 成功\033[0m" if ebody.get("ok") else "\033[31m✖ 失败\033[0m"
+                        print(f"        🔧 [工具执行回执]: {status_str} - {ebody.get('summary', '')[:120]}", flush=True)
+                    elif stage == "stream_event":
+                        print(f"        📡 [DSH 原始事件]: \033[35m{ebody.get('eventType')}\033[0m", flush=True)
                     elif stage == "text":
-                        # 中间文本段
-                        pass
+                        print(f"        ✍️  [DSH 正在生成文本...]", flush=True)
                     continue
 
                 cost_ms = (time.perf_counter() - start_t) * 1000
